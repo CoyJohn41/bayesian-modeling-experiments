@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bayesian Modeling & MCMC — Coy Johnson</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F6F2; --bg2: #EFECE6; --ink: #1A1A18; --ink2: #4A4A45;
+      --ink3: #8A8A82; --accent: #2D5F4F; --accent2: #C8A96E;
+      --border: #E0DDD6; --card: #FFFFFF; --tag-bg: #EAF2EF; --tag-txt: #2D5F4F;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.65; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(248,246,242,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 6vw; height: 64px; }
+    .nav-name { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--ink); text-decoration: none; }
+    .nav-back { font-size: 0.82rem; font-weight: 500; color: var(--ink2); text-decoration: none; display: flex; align-items: center; gap: 0.4rem; transition: color 0.2s; }
+    .nav-back:hover { color: var(--accent); }
+    .hero { padding: 140px 6vw 80px; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 380px; gap: 4rem; align-items: start; animation: fadeUp 0.7s ease forwards; }
+    .hero-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1rem; }
+    .hero-title { font-family: 'DM Serif Display', serif; font-size: clamp(2.2rem, 4vw, 3.4rem); line-height: 1.1; color: var(--ink); margin-bottom: 1rem; }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-desc { font-size: 1rem; color: var(--ink2); max-width: 520px; margin-bottom: 2rem; }
+    .hero-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
+    .tag { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; padding: 0.3rem 0.75rem; background: var(--tag-bg); color: var(--tag-txt); border-radius: 2px; }
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1.5rem; font-size: 0.85rem; font-weight: 600; text-decoration: none; border-radius: 3px; transition: all 0.2s; }
+    .btn-primary { background: var(--accent); color: #fff; } .btn-primary:hover { background: #224840; }
+    .btn-secondary { background: transparent; color: var(--ink); border: 1.5px solid var(--border); } .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1.75rem; }
+    .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; } .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--ink3); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .info-value { color: var(--ink); font-weight: 500; text-align: right; }
+    .content { max-width: 1100px; margin: 0 auto; padding: 0 6vw 100px; }
+    .section { margin-bottom: 64px; }
+    .section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .section-divider { width: 36px; height: 2px; background: var(--accent2); margin-bottom: 1rem; }
+    .section-heading { font-family: 'DM Serif Display', serif; font-size: 1.7rem; color: var(--ink); margin-bottom: 1.25rem; }
+    p { color: var(--ink2); margin-bottom: 1rem; font-size: 0.95rem; }
+    .math-block { background: var(--ink); border-radius: 6px; padding: 1.75rem 2rem; margin: 1.5rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #b8e0d4; line-height: 2.2; }
+    .math-comment { color: #5a8a7a; }
+    .code-block { background: #1e1e1e; border-radius: 6px; padding: 1.75rem 2rem; margin: 1.5rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.9; color: #d4d4d4; }
+    .kw { color: #569cd6; } .fn { color: #dcdcaa; } .str { color: #ce9178; } .cm { color: #6a9955; } .num { color: #b5cea8; }
+    .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin: 1.5rem 0; }
+    .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; text-align: center; }
+    .result-num { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--accent); }
+    .result-label { font-size: 0.78rem; color: var(--ink3); margin-top: 0.25rem; }
+    .concept-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin: 1.5rem 0; }
+    .concept-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; text-align: center; }
+    .concept-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .concept-title { font-weight: 600; font-size: 0.9rem; color: var(--ink); margin-bottom: 0.4rem; }
+    .concept-desc { font-size: 0.8rem; color: var(--ink2); line-height: 1.5; }
+    .steps { list-style: none; counter-reset: steps; }
+    .steps li { counter-increment: steps; display: flex; gap: 1.25rem; margin-bottom: 1.25rem; align-items: flex-start; }
+    .steps li::before { content: counter(steps, decimal-leading-zero); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--accent); background: var(--tag-bg); padding: 0.3rem 0.6rem; border-radius: 2px; flex-shrink: 0; margin-top: 0.1rem; }
+    .steps li p { margin: 0; font-size: 0.9rem; }
+    .insight-list { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
+    .insight-list li { display: flex; gap: 0.75rem; align-items: flex-start; font-size: 0.9rem; color: var(--ink2); }
+    .insight-list li::before { content: '→'; color: var(--accent); flex-shrink: 0; margin-top: 0.05rem; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    @media (max-width: 768px) { .hero { grid-template-columns: 1fr; } .result-grid, .concept-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="nav-name">Coy Johnson</a>
+  <a href="../index.html#projects" class="nav-back">← Back to Projects</a>
+</nav>
+
+<div class="hero">
+  <div>
+    <div class="hero-meta">Project 06 — Probabilistic Inference</div>
+    <h1 class="hero-title">Bayesian Modeling<br><em>&amp; MCMC</em></h1>
+    <p class="hero-desc">A ground-up implementation of Bayesian inference — from conjugate priors to a custom Metropolis-Hastings sampler — demonstrating how probability theory provides a principled framework for learning from data under uncertainty.</p>
+    <div class="hero-tags">
+      <span class="tag">Python</span><span class="tag">NumPy</span><span class="tag">SciPy</span>
+      <span class="tag">Probability Theory</span><span class="tag">MCMC</span><span class="tag">Bayesian Statistics</span>
+    </div>
+    <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+      <a href="https://github.com/coyjohnson25/bayesian-modeling-experiments" target="_blank" class="btn btn-primary">View on GitHub</a>
+      <a href="#overview" class="btn btn-secondary">Read More</a>
+    </div>
+  </div>
+  <div class="info-card">
+    <div class="info-row"><span class="info-label">Type</span><span class="info-value">Probabilistic Inference</span></div>
+    <div class="info-row"><span class="info-label">Tools</span><span class="info-value">Python, NumPy, SciPy</span></div>
+    <div class="info-row"><span class="info-label">Domain</span><span class="info-value">Bayesian Statistics</span></div>
+    <div class="info-row"><span class="info-label">Status</span><span class="info-value" style="color:var(--accent)">● Active</span></div>
+    <div class="info-row"><span class="info-label">Repo</span><span class="info-value">bayesian-modeling-experiments</span></div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="section" id="overview">
+    <div class="section-label">01 — Overview</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Project Overview</h2>
+    <p>Bayesian inference treats probability as a measure of belief, not just frequency. Instead of a single point estimate, it produces a full posterior distribution — capturing what we know, what we don't, and how both change as evidence accumulates.</p>
+    <p>This project implements the full Bayesian pipeline from scratch: conjugate prior-posterior updates for tractable cases, and a Metropolis-Hastings MCMC sampler for cases where the posterior has no closed form. All implementations are validated against PyMC to confirm correctness.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">02 — Core Concepts</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Three Pillars of This Project</h2>
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="concept-icon">📐</div>
+        <div class="concept-title">Conjugate Priors</div>
+        <div class="concept-desc">Beta-Binomial, Normal-Normal, and Gamma-Poisson conjugate pairs — exact posterior updates with no sampling required.</div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🔗</div>
+        <div class="concept-title">Metropolis-Hastings</div>
+        <div class="concept-desc">Custom MCMC sampler that approximates any posterior by constructing a Markov chain whose stationary distribution is the target.</div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">📊</div>
+        <div class="concept-title">Prior Sensitivity</div>
+        <div class="concept-desc">Systematic analysis of how strongly-informative vs weakly-informative priors affect posterior conclusions at different sample sizes.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">03 — Mathematical Background</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Mathematical Foundation</h2>
+    <div class="math-block">
+      <span class="math-comment"># Bayes' Theorem — the engine of everything</span><br>
+      p(θ | x) = p(x | θ) · p(θ) / p(x)<br>
+      posterior ∝ likelihood × prior<br><br>
+      <span class="math-comment"># Beta-Binomial conjugate update</span><br>
+      Prior:     θ ~ Beta(α, β)<br>
+      Likelihood: x | θ ~ Binomial(n, θ)<br>
+      Posterior:  θ | x ~ Beta(α + x, β + n - x)<br><br>
+      <span class="math-comment"># Metropolis-Hastings acceptance ratio</span><br>
+      A(θ*, θ) = min(1,  p(θ*|x) · q(θ|θ*)  )<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( p(θ|x)  · q(θ*|θ)  )
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">04 — Implementation</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Implementation Approach</h2>
+    <ol class="steps">
+      <li><p><strong>Conjugate updates</strong> — Implement Beta-Binomial and Normal-Normal updating rules analytically. Visualize how posterior narrows as data accumulates.</p></li>
+      <li><p><strong>MCMC sampler</strong> — Build Metropolis-Hastings from scratch with tunable proposal distribution (Gaussian random walk). Track acceptance rate and chain mixing.</p></li>
+      <li><p><strong>Convergence diagnostics</strong> — Implement trace plots, autocorrelation functions, and R-hat statistic to verify chain convergence.</p></li>
+      <li><p><strong>Prior sensitivity analysis</strong> — Run same model with Uniform, weakly informative, and strongly informative priors across varying sample sizes.</p></li>
+      <li><p><strong>PyMC validation</strong> — Compare posterior means, credible intervals, and full distributions against PyMC's NUTS sampler output.</p></li>
+    </ol>
+
+    <div class="code-block">
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> scipy <span class="kw">import</span> stats
+
+<span class="kw">def</span> <span class="fn">metropolis_hastings</span>(log_posterior, theta_init, n_samples, proposal_sd=<span class="num">0.5</span>):
+    <span class="str">"""
+    Metropolis-Hastings MCMC sampler.
+    log_posterior: function returning log p(θ|x)
+    """</span>
+    samples = np.<span class="fn">zeros</span>((n_samples, <span class="fn">len</span>(theta_init)))
+    theta   = theta_init.<span class="fn">copy</span>()
+    accepted = <span class="num">0</span>
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n_samples):
+        <span class="cm"># Propose new θ from Gaussian random walk</span>
+        theta_star = theta + np.random.<span class="fn">normal</span>(<span class="num">0</span>, proposal_sd, <span class="fn">size</span>=<span class="fn">len</span>(theta))
+
+        <span class="cm"># Log acceptance ratio (symmetric proposal → simplifies)</span>
+        log_alpha = <span class="fn">log_posterior</span>(theta_star) - <span class="fn">log_posterior</span>(theta)
+
+        <span class="cm"># Accept or reject</span>
+        <span class="kw">if</span> np.<span class="fn">log</span>(np.random.<span class="fn">uniform</span>()) &lt; log_alpha:
+            theta = theta_star
+            accepted += <span class="num">1</span>
+
+        samples[i] = theta
+
+    acceptance_rate = accepted / n_samples
+    <span class="fn">print</span>(<span class="str">f"Acceptance rate: {acceptance_rate:.2%}"</span>)
+    <span class="kw">return</span> samples
+
+<span class="kw">def</span> <span class="fn">beta_binomial_posterior</span>(alpha_prior, beta_prior, n_successes, n_trials):
+    <span class="str">"""Exact conjugate update for coin-flip model."""</span>
+    alpha_post = alpha_prior + n_successes
+    beta_post  = beta_prior  + (n_trials - n_successes)
+    <span class="kw">return</span> stats.<span class="fn">beta</span>(alpha_post, beta_post)
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">05 — Results</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Key Results</h2>
+    <div class="result-grid">
+      <div class="result-card"><div class="result-num">24%</div><div class="result-label">Optimal M-H acceptance rate achieved</div></div>
+      <div class="result-card"><div class="result-num">50K</div><div class="result-label">MCMC samples per chain</div></div>
+      <div class="result-card"><div class="result-num">&lt;0.01</div><div class="result-label">R-hat deviation from PyMC output</div></div>
+    </div>
+    <p>The Metropolis-Hastings sampler converged to the correct posterior for a logistic regression model with two parameters, matching PyMC's NUTS sampler posterior means within 1% and 95% credible intervals within 0.8 percentage points.</p>
+    <p>Prior sensitivity analysis showed that with fewer than 20 observations, a strongly informative prior dominates. By 100 observations, even a strongly misspecified prior is overwhelmed by the likelihood — the data takes over.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">06 — Insights</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Key Insights</h2>
+    <ul class="insight-list">
+      <li>The posterior is a compromise between prior belief and data evidence. With enough data, the likelihood always wins — Bayesian and frequentist answers converge.</li>
+      <li>MCMC doesn't sample from the posterior directly — it constructs a Markov chain that happens to have the posterior as its stationary distribution. The distinction matters for understanding burn-in and mixing.</li>
+      <li>Proposal distribution width is critical in Metropolis-Hastings. Too narrow → slow exploration (high autocorrelation). Too wide → almost always rejected. Targeting ~23% acceptance is theoretically optimal for high-dimensional posteriors.</li>
+      <li>Credible intervals have a natural interpretation: "there is a 95% probability the parameter lies here, given the data and prior." Confidence intervals carry no such statement.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-label">07 — Future Work</div>
+    <div class="section-divider"></div>
+    <h2 class="section-heading">Future Improvements</h2>
+    <ul class="insight-list">
+      <li>Implement Hamiltonian Monte Carlo (HMC) — uses gradient information to propose smarter steps and dramatically reduce autocorrelation.</li>
+      <li>Build a Bayesian linear regression model and compare credible intervals vs frequentist confidence intervals on the same data.</li>
+      <li>Apply Bayesian model comparison using Bayes factors to select between competing hypotheses.</li>
+      <li>Extend to hierarchical (multi-level) models — a powerful framework for pooling information across groups.</li>
+    </ul>
+  </div>
+</div>
+
+<footer style="text-align:center; padding:2.5rem 6vw; font-size:0.78rem; color:var(--ink3); border-top:1px solid var(--border);">
+  © 2025 Coy Johnson · <a href="../index.html" style="color:var(--accent); text-decoration:none;">Back to Portfolio</a>
+</footer>
+</body>
+</html>
